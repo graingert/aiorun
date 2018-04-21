@@ -25,6 +25,8 @@ def test_sig():
     os.kill(proc.pid, signal.CTRL_BREAK_EVENT)
     print('Send signal')
     proc.wait(timeout=5)
+    stdout = proc.stdout.read().decode()
+    print(stdout)
     assert proc.returncode == 0
 
     expected = [
@@ -36,6 +38,4 @@ def test_sig():
         'Bye!',
     ]
 
-    stdout = proc.stdout.read().decode()
-    print(stdout)
     assert all(phrase in stdout for phrase in expected)
