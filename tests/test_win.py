@@ -37,4 +37,5 @@ def test_sig():
     ]
 
     stdout = proc.stdout.read().decode()
+    print(stdout)
     assert all(phrase in stdout for phrase in expected)
