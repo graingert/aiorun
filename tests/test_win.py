@@ -19,7 +19,7 @@ def test_sig():
         stderr=sp.STDOUT,
         creationflags=sp.CREATE_NEW_PROCESS_GROUP
     )
-    time.sleep(0.1)
+    time.sleep(0.5)
     # proc.send_signal(signal.CTRL_BREAK_EVENT)
     # os.kill(proc.pid, signal.CTRL_C_EVENT)
     os.kill(proc.pid, signal.CTRL_BREAK_EVENT)
