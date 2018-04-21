@@ -1,4 +1,5 @@
 """Boilerplate for asyncio applications"""
+import sys
 import logging
 import asyncio
 from asyncio import (
@@ -25,6 +26,7 @@ from functools import partial
 __all__ = ['run', 'shutdown_waits_for']
 __version__ = '2018.4.1'
 logger = logging.getLogger('aiorun')
+WINDOWS = sys.platform == 'win32'
 
 
 _DO_NOT_CANCEL_COROS = WeakSet()
@@ -109,8 +111,9 @@ def shutdown_waits_for(coro, loop=None):
 def _shutdown(loop=None):
     logger.debug('Entering shutdown handler')
     loop = loop or get_event_loop()
-    loop.remove_signal_handler(SIGTERM)
-    loop.add_signal_handler(SIGINT, lambda: None)
+    if not WINDOWS:
+        loop.remove_signal_handler(SIGTERM)
+        loop.add_signal_handler(SIGINT, lambda: None)
     logger.critical('Stopping the loop')
     loop.call_soon_threadsafe(loop.stop)
 
@@ -176,8 +179,9 @@ def run(coro: 'Optional[Coroutine]' = None, *,
         loop.create_task(new_coro())
 
     shutdown_handler = shutdown_handler or partial(_shutdown, loop)
-    loop.add_signal_handler(SIGINT, shutdown_handler)
-    loop.add_signal_handler(SIGTERM, shutdown_handler)
+    if not WINDOWS:
+        loop.add_signal_handler(SIGINT, shutdown_handler)
+        loop.add_signal_handler(SIGTERM, shutdown_handler)
 
     # TODO: We probably don't want to create a different executor if the
     # TODO: loop was supplied. (User might have put stuff on that loop's
@@ -187,7 +191,16 @@ def run(coro: 'Optional[Coroutine]' = None, *,
         executor = ThreadPoolExecutor(max_workers=executor_workers)
     loop.set_default_executor(executor)
     logger.critical('Running forever.')
-    loop.run_forever()
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        logger.critical('Got KeyboardInterrupt')
+        if WINDOWS:
+            # Windows doesn't do any POSIX signal handling, and no
+            # abstraction layer for signals is currently implemented in
+            # asyncio. So we fall back to KeyboardInterrupt (triggered
+            # by the user/environment sending CTRL-C, or signal.CTRL_C_EVENT
+            shutdown_handler()
     logger.critical('Entering shutdown phase.')
 
     def sep():
