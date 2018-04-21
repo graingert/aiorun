@@ -11,6 +11,7 @@ from asyncio import (
     Future
 )
 from concurrent.futures import Executor, ThreadPoolExecutor
+import signal
 from signal import SIGTERM, SIGINT
 from typing import Optional, Callable
 try:  # pragma: no cover
@@ -20,7 +21,6 @@ try:  # pragma: no cover
 except ImportError:
     pass
 from weakref import WeakSet
-from functools import partial
 
 
 __all__ = ['run', 'shutdown_waits_for']
@@ -108,20 +108,9 @@ def shutdown_waits_for(coro, loop=None):
     return inner()
 
 
-def _shutdown(loop=None):
-    logger.debug('Entering shutdown handler')
-    loop = loop or get_event_loop()
-    if not WINDOWS:
-        loop.remove_signal_handler(SIGTERM)
-        loop.add_signal_handler(SIGINT, lambda: None)
-    logger.critical('Stopping the loop')
-    loop.call_soon_threadsafe(loop.stop)
-
-
 def run(coro: 'Optional[Coroutine]' = None, *,
         loop: Optional[AbstractEventLoop] = None,
-        shutdown_handler: Optional[
-            Callable[[Optional[AbstractEventLoop]], None]] = None,
+        shutdown_handler: Optional[Callable[[AbstractEventLoop], None]] = None,
         executor_workers: int = 10,
         executor: Optional[Executor] = None,
         use_uvloop: bool = False) -> None:
@@ -129,8 +118,9 @@ def run(coro: 'Optional[Coroutine]' = None, *,
     Start up the event loop, and wait for a signal to shut down.
 
     :param coro: Optionally supply a coroutine. The loop will still
-        run if missing. This would typically be a "main" coroutine
-        from which all other work is spawned.
+        run if missing. The loop will continue to run after the supplied
+        coroutine finishes. The supplised coroutine is typically
+        a "main" coroutine from which all other work is spawned.
     :param loop: Optionally supply your own loop. If missing, the
         default loop attached to the current thread context will
         be used, i.e., whatever ``asyncio.get_event_loop()`` returns.
@@ -178,10 +168,25 @@ def run(coro: 'Optional[Coroutine]' = None, *,
                 pass
         loop.create_task(new_coro())
 
-    shutdown_handler = shutdown_handler or partial(_shutdown, loop)
+    shutdown_handler = shutdown_handler or _shutdown_handler
     if not WINDOWS:
-        loop.add_signal_handler(SIGINT, shutdown_handler)
-        loop.add_signal_handler(SIGTERM, shutdown_handler)
+        loop.add_signal_handler(SIGINT, shutdown_handler, loop)
+        loop.add_signal_handler(SIGTERM, shutdown_handler, loop)
+
+    if WINDOWS:
+        # This is to allow CTRL-C to be detected in a timely fashion,
+        # see: https://bugs.python.org/issue23057#msg246316
+        loop.create_task(windows_support_wakeup())
+
+        # This is to be able to handle SIGBREAK.
+        def windows_handler(sig, frame):
+            # Disable the handler so it won't be called again.
+            signame = signal.Signals(sig).name
+            logger.critical(f'Received signal: {signame}. Stopping the loop.')
+            shutdown_handler(loop)
+
+        signal.signal(signal.SIGBREAK, windows_handler)
+        signal.signal(signal.SIGINT, windows_handler)
 
     # TODO: We probably don't want to create a different executor if the
     # TODO: loop was supplied. (User might have put stuff on that loop's
@@ -240,3 +245,25 @@ def run(coro: 'Optional[Coroutine]' = None, *,
         logger.critical('Closing the loop.')
         loop.close()
     logger.critical('Leaving. Bye!')
+
+
+async def windows_support_wakeup():
+    """See https://stackoverflow.com/a/36925722 """
+    while True:
+        await asyncio.sleep(0.1)
+
+
+def _shutdown_handler(loop):
+    logger.debug('Entering shutdown handler')
+    loop = loop or get_event_loop()
+
+    # Disable the handlers so they won't be called again.
+    if WINDOWS:
+        signal.signal(signal.SIGBREAK, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+    else:
+        loop.remove_signal_handler(SIGTERM)
+        loop.add_signal_handler(SIGINT, lambda: None)
+
+    logger.critical('Stopping the loop')
+    loop.call_soon_threadsafe(loop.stop)

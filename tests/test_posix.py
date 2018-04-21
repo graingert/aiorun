@@ -9,7 +9,8 @@ from aiorun import run, shutdown_waits_for, _DO_NOT_CANCEL_COROS
 import pytest
 
 
-WINDOWS = dict(condition=sys.platform == 'win32', reason="Windows doesn't use POSIX signals")
+if sys.platform == 'win32':
+    pytest.skip("Windows doesn't use POSIX signals", allow_module_level=True)
 
 
 def kill(sig=SIGTERM, after=0.01):
@@ -29,7 +30,6 @@ def newloop():
     return loop
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigterm():
     """Basic SIGTERM"""
     async def main():
@@ -41,7 +41,6 @@ def test_sigterm():
     assert not loop.is_closed()
 
 
-@pytest.mark.skipif(**WINDOWS)
 @pytest.mark.skipif(sys.version_info >= (3, 7), reason=(
         "On nightly (3.7), the use of uvloop causes the following error:\n\n"
         "AttributeError: module 'asyncio.coroutines' has no attribute 'debug_wrapper'\n\n"
@@ -56,7 +55,6 @@ def test_uvloop():
     run(main(), use_uvloop=True)
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_no_coroutine():
     """Signal should still work without a main coroutine"""
     kill(SIGTERM)
@@ -64,7 +62,6 @@ def test_no_coroutine():
     run()
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigint():
     """Basic SIGINT"""
     kill(SIGINT)
@@ -72,7 +69,6 @@ def test_sigint():
     run()
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_exe():
     """Custom executor"""
     exe = ThreadPoolExecutor()
@@ -81,7 +77,6 @@ def test_exe():
     run(executor=exe)
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigint_pause():
     """Trying to send multiple signals."""
     items = []
@@ -105,7 +100,6 @@ def test_sigint_pause():
     assert items  # Verify that main() ran till completion.
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigterm_enduring_create_task():
     """Calling `shutdown_waits_for()` via `create_task()`"""
 
@@ -125,7 +119,6 @@ def test_sigterm_enduring_create_task():
     assert items
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigterm_enduring_ensure_future():
     """Calling `shutdown_waits_for()` via `ensure_future()`"""
 
@@ -145,7 +138,6 @@ def test_sigterm_enduring_ensure_future():
     assert items
 
 
-@pytest.mark.skipif(**WINDOWS)
 @pytest.mark.filterwarnings("ignore:coroutine 'shutdown_waits_for.<locals>.inner' was never awaited")
 def test_sigterm_enduring_bare():
     """Call `shutdown_waits_for() without await, or create_task(), or
@@ -170,7 +162,6 @@ def test_sigterm_enduring_bare():
     assert items
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigterm_enduring_await():
     """Call `shutdown_waits_for() with await."""
     items = []
@@ -205,7 +196,6 @@ def test_sigterm_enduring_await():
     assert len(items) == 2
 
 
-@pytest.mark.skipif(**WINDOWS)
 def test_sigterm_enduring_indirect_cancel():
     items = []
 

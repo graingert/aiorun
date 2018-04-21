@@ -7,7 +7,11 @@ logging.basicConfig(level='DEBUG')
 
 
 async def main():
-    await asyncio.sleep(5)
+    logging.info('Sleeping in main')
+    try:
+        await asyncio.sleep(50)
+    finally:
+        logging.info('Leaving main')
 
 
 run(main())

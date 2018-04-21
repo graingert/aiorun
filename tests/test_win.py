@@ -1,44 +1,40 @@
 import sys
-import asyncio
 import os
 import time
-import threading
-from signal import SIGINT, SIGTERM
 import signal
-from concurrent.futures import ThreadPoolExecutor
-from aiorun import run, shutdown_waits_for, _DO_NOT_CANCEL_COROS
+import subprocess as sp
 import pytest
 
 
-def kill(sig=SIGTERM, after=0.01):
-    """Tool to send a signal after a pause"""
-
-    def job():
-        pid = os.getpid()
-        time.sleep(after)
-        os.kill(pid, sig)
-
-    t = threading.Thread(target=job)
-    t.start()
+if sys.platform != 'win32':
+    pytest.skip("These tests are for Windows compatibility.",
+                allow_module_level=True)
 
 
-def newloop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    return loop
-
-
-def test_sigterm():
+def test_sig():
     """Basic SIGTERM"""
-    import subprocess as sp
     proc = sp.Popen(
         'python tests/fake_main.py'.split(),
-        stdout=sys.stdout,
+        stdout=sp.PIPE,
         stderr=sp.STDOUT,
         creationflags=sp.CREATE_NEW_PROCESS_GROUP
     )
-    time.sleep(3.0)
-    # proc.send_signal(signal.CTRL_C_EVENT)
+    time.sleep(0.1)
+    # proc.send_signal(signal.CTRL_BREAK_EVENT)
+    # os.kill(proc.pid, signal.CTRL_C_EVENT)
     os.kill(proc.pid, signal.CTRL_BREAK_EVENT)
     print('Send signal')
+    proc.wait(timeout=5)
     assert proc.returncode == 0
+
+    expected = [
+        'Running forever',
+        'Received signal: SIGBREAK',
+        'Entering shutdown phase',
+        'pending tasks till complete',
+        'Closing the loop',
+        'Bye!',
+    ]
+
+    stdout = proc.stdout.read().decode()
+    assert all(phrase in stdout for phrase in expected)
