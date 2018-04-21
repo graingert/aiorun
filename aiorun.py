@@ -182,7 +182,7 @@ def run(coro: 'Optional[Coroutine]' = None, *,
         def windows_handler(sig, frame):
             # Disable the handler so it won't be called again.
             signame = signal.Signals(sig).name
-            logger.critical(f'Received signal: {signame}. Stopping the loop.')
+            logger.critical('Received signal: %s. Stopping the loop.', signame)
             shutdown_handler(loop)
 
         signal.signal(signal.SIGBREAK, windows_handler)
