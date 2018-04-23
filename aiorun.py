@@ -13,6 +13,7 @@ from asyncio import (
 from concurrent.futures import Executor, ThreadPoolExecutor
 import signal
 from signal import SIGTERM, SIGINT
+import functools
 from typing import Optional, Callable
 try:  # pragma: no cover
     # Coroutine only arrived in Python 3.5.3, and Ubuntu 16.04 is unfortunately
@@ -169,9 +170,6 @@ def run(coro: 'Optional[Coroutine]' = None, *,
         loop.create_task(new_coro())
 
     shutdown_handler = shutdown_handler or _shutdown_handler
-    if not WINDOWS:
-        loop.add_signal_handler(SIGINT, shutdown_handler, loop)
-        loop.add_signal_handler(SIGTERM, shutdown_handler, loop)
 
     if WINDOWS:
         # This is to allow CTRL-C to be detected in a timely fashion,
@@ -187,6 +185,10 @@ def run(coro: 'Optional[Coroutine]' = None, *,
 
         signal.signal(signal.SIGBREAK, windows_handler)
         signal.signal(signal.SIGINT, windows_handler)
+    else:
+        enclose_loop = functools.partial(shutdown_handler, loop)
+        loop.add_signal_handler(SIGINT, enclose_loop, loop)
+        loop.add_signal_handler(SIGTERM, enclose_loop, loop)
 
     # TODO: We probably don't want to create a different executor if the
     # TODO: loop was supplied. (User might have put stuff on that loop's
