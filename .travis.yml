@@ -6,6 +6,6 @@ python:
 install:
     - "pip install -r requirements-test.txt"
 script:
-    PYTHONPATH=. py.test --cov aiorun tests/
+    PYTHONPATH=. py.test -s --cov aiorun tests/
 after_success:
     coveralls
