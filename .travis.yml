@@ -6,6 +6,6 @@ python:
 install:
     - "pip install -r requirements-test.txt"
 script:
-    PYTHONPATH=. py.test --cov aiorun --cov-report term-missing tests/
+    PYTHONPATH=. py.test -vv --cov aiorun --cov-report term-missing tests/
 after_success:
     coveralls
