@@ -15,7 +15,7 @@ install:
   # We need wheel installed to build wheels
   - "%PYTHON%\\python.exe -m pip install -U pip setuptools wheel"
   - "%PYTHON%\\python.exe -m pip install -r requirements-test.txt"
-  - "flit install --pth-file"
+  - "%PYTHON%\\Scripts\flit.exe install --pth-file"
 
 
 build: off
