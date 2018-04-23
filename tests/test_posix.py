@@ -100,7 +100,6 @@ def test_sigint_pause():
     assert items  # Verify that main() ran till completion.
 
 
-@pytest.mark.timeout(5)
 def test_sigterm_enduring_create_task():
     """Calling `shutdown_waits_for()` via `create_task()`"""
 
@@ -120,7 +119,6 @@ def test_sigterm_enduring_create_task():
     assert items
 
 
-@pytest.mark.timeout(5)
 def test_sigterm_enduring_ensure_future():
     """Calling `shutdown_waits_for()` via `ensure_future()`"""
 
@@ -140,7 +138,6 @@ def test_sigterm_enduring_ensure_future():
     assert items
 
 
-@pytest.mark.timeout(5)
 @pytest.mark.filterwarnings("ignore:coroutine 'shutdown_waits_for.<locals>.inner' was never awaited")
 def test_sigterm_enduring_bare():
     """Call `shutdown_waits_for() without await, or create_task(), or
@@ -165,7 +162,6 @@ def test_sigterm_enduring_bare():
     assert items
 
 
-@pytest.mark.timeout(5)
 def test_sigterm_enduring_await():
     """Call `shutdown_waits_for() with await."""
     items = []
@@ -200,7 +196,6 @@ def test_sigterm_enduring_await():
     assert len(items) == 2
 
 
-@pytest.mark.timeout(5)
 def test_sigterm_enduring_indirect_cancel():
     items = []
 
