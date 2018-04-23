@@ -186,9 +186,8 @@ def run(coro: 'Optional[Coroutine]' = None, *,
         signal.signal(signal.SIGBREAK, windows_handler)
         signal.signal(signal.SIGINT, windows_handler)
     else:
-        enclose_loop = functools.partial(shutdown_handler, loop)
-        loop.add_signal_handler(SIGINT, enclose_loop, loop)
-        loop.add_signal_handler(SIGTERM, enclose_loop, loop)
+        loop.add_signal_handler(SIGINT, shutdown_handler, loop)
+        loop.add_signal_handler(SIGTERM, shutdown_handler, loop)
 
     # TODO: We probably don't want to create a different executor if the
     # TODO: loop was supplied. (User might have put stuff on that loop's
