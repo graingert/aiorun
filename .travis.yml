@@ -1,11 +1,12 @@
 language: python
 python:
+  - "3.5.1"
   - "3.5"
   - "3.6"
-  - "3.7-dev"
+#  - "nightly"
 install:
     - "pip install -r requirements-test.txt"
 script:
-    PYTHONPATH=. py.test -vv --cov aiorun --cov-report term-missing tests/
+    PYTHONPATH=. pytest -vv --cov aiorun --cov-report term-missing tests/
 after_success:
     coveralls
