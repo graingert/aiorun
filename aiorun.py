@@ -19,7 +19,7 @@ try:  # pragma: no cover
     # Coroutine only arrived in Python 3.5.3, and Ubuntu 16.04 is unfortunately
     # stuck on 3.5.2 for the time being. Revisit this in a year.
     from typing import Coroutine
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 from weakref import WeakSet
 
@@ -171,7 +171,7 @@ def run(coro: 'Optional[Coroutine]' = None, *,
 
     shutdown_handler = shutdown_handler or _shutdown_handler
 
-    if WINDOWS:
+    if WINDOWS:  # pragma: no cover
         # This is to allow CTRL-C to be detected in a timely fashion,
         # see: https://bugs.python.org/issue23057#msg246316
         loop.create_task(windows_support_wakeup())
@@ -199,7 +199,7 @@ def run(coro: 'Optional[Coroutine]' = None, *,
     logger.critical('Running forever.')
     try:
         loop.run_forever()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # pragma: no cover
         logger.critical('Got KeyboardInterrupt')
         if WINDOWS:
             # Windows doesn't do any POSIX signal handling, and no
@@ -248,7 +248,7 @@ def run(coro: 'Optional[Coroutine]' = None, *,
     logger.critical('Leaving. Bye!')
 
 
-async def windows_support_wakeup():
+async def windows_support_wakeup():  # pragma: no cover
     """See https://stackoverflow.com/a/36925722 """
     while True:
         await asyncio.sleep(0.1)
@@ -259,7 +259,7 @@ def _shutdown_handler(loop):
     loop = loop or get_event_loop()
 
     # Disable the handlers so they won't be called again.
-    if WINDOWS:
+    if WINDOWS:  # pragma: no cover
         signal.signal(signal.SIGBREAK, signal.SIG_IGN)
         signal.signal(signal.SIGINT, signal.SIG_IGN)
     else:
