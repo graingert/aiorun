@@ -5,7 +5,7 @@ python:
   - "3.6"
 #  - "nightly"
 install:
-    - "pip install -r requirements-test.txt"
+    - "pip install -U -r requirements-test.txt"
 script:
     PYTHONPATH=. pytest -vv --cov aiorun --cov-report term-missing tests/
 after_success:
