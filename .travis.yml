@@ -14,7 +14,7 @@ matrix:
     language: sh
     python: "3.7"
     before_install:
-        - brew update
+        #- brew update
         - brew upgrade python3
         - python3 -m venv venv
         - source venv/bin/activate
@@ -31,6 +31,6 @@ install:
     - "pip install -r requirements-test.txt"
     - "flit install"
 script:
-    pytest --cov aiorun tests/
+    pytest -vv --cov aiorun tests/
 after_success:
     coveralls
