@@ -29,7 +29,7 @@ matrix:
         - python -m pip install --upgrade pip wheel
 install:
     - "pip install -r requirements-test.txt"
-    - "pip install -e ."
+    - "flit install"
 script:
     pytest --cov aiorun tests/
 after_success:
